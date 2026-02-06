@@ -5,121 +5,113 @@ type Styles = ReturnType<typeof createProductModalStyles>;
 
 export default function createProductModalStyles(theme: AppTheme, isWide: boolean) {
   return StyleSheet.create({
-    overlay: {
-      flex: 1,
+    backdrop: {
+      ...StyleSheet.absoluteFillObject,
       backgroundColor: theme.colors.overlay,
       justifyContent: 'center',
-      padding: 16,
+      zIndex: 1,
     },
-    container: {
+    backdropPressArea: {
+      ...StyleSheet.absoluteFillObject,
+    },
+    sheetContainer: {
+      position: 'absolute',
+      left: '5%',
+      right: '5%',
+      bottom: '3%',
       backgroundColor: theme.colors.card,
-      borderRadius: 12,
-      padding: 16,
-      maxHeight: '90%',
+      borderRadius: 18,
+      maxHeight: '85%',
       overflow: 'hidden',
+      elevation: 12,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 6 },
+      shadowOpacity: 0.12,
+      shadowRadius: 20,
       borderWidth: 1,
       borderColor: theme.colors.border,
-    },
-    contentRow: {
-      flexDirection: isWide ? 'row' : 'column',
-    },
-    imageWrapper: {
-      flex: isWide ? 0.4 : 0,
-      marginRight: isWide ? 12 : 0,
-      height: isWide ? 240 : 300,
-    },
-    image: {
-      width: '100%',
-      height: '100%',
-      borderRadius: 8,
-    },
-    rightColumn: {
-      flex: 1,
+      zIndex: 10,
     },
     headerRow: {
       flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingTop: 6,
     },
     title: {
       fontSize: 22,
-      fontWeight: '700',
+      fontWeight: '800',
       color: theme.colors.text,
     },
-    category: {
+    brand: {
       fontSize: 14,
       color: theme.colors.textSecondary,
       marginTop: 4,
     },
     closeButton: {
-      padding: 8,
-    },
-    price: {
-      fontSize: 20,
-      fontWeight: '800',
-      color: theme.colors.primary,
-      marginTop: 12,
-    },
-    details: {
-      marginTop: 12,
-    },
-    detailRow: {
-      flexDirection: 'row',
+      width: 44,
+      height: 44,
+      justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: 8,
+      marginLeft: 8,
     },
-    detailLabel: {
-      color: theme.colors.textSecondary,
-      marginRight: 4,
+    contentScroll: {
+      paddingHorizontal: 16,
     },
-    detailValue: {
-      color: theme.colors.text,
-      fontWeight: '600',
+    contentContainer: {
+      paddingBottom: 12,
     },
-    starText: {
-      color: theme.colors.text,
-      fontWeight: '600',
-      marginLeft: 4,
-    },
-    reviewCount: {
-      color: theme.colors.textSecondary,
-      marginLeft: 4,
-    },
-    stockText: {
-      color: theme.colors.textSecondary,
-    },
-    descriptionScroll: {
+    imageContainer: {
+      alignItems: 'center',
       marginTop: 12,
-      maxHeight: 160,
+    },
+    heroImage: {
+      width: '100%',
+      aspectRatio: 4 / 3,
+      borderRadius: 12,
+      backgroundColor: '#f0f0f0',
+      overflow: 'hidden',
+    },
+    infoSection: {
+      marginTop: 12,
+    },
+    chipsRow: {
+      flexDirection: 'row',
+      marginTop: 12,
+    },
+    chip: {
+      backgroundColor: theme.colors.border,
+      paddingHorizontal: 8,
+      paddingVertical: 4,
+      borderRadius: 12,
+      color: theme.colors.text,
+      fontSize: 12,
+      alignSelf: 'flex-start',
+    },
+    descriptionBlock: {
+      marginTop: 12,
     },
     descriptionText: {
-      color: theme.colors.text,
+      fontSize: 14,
       lineHeight: 20,
+      color: theme.colors.text,
     },
-    actions: {
-      flexDirection: isWide ? 'row' : 'column',
-      marginTop: 16,
+    actionsRow: {
+      padding: 16,
+      borderTopWidth: 1,
+      borderColor: theme.colors.border,
+      backgroundColor: theme.colors.card,
     },
     primaryButton: {
-      backgroundColor: theme.colors.primary,
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      borderRadius: 8,
-      marginRight: isWide ? 8 : 0,
+      height: 50,
+      borderRadius: 12,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     primaryButtonText: {
       color: '#fff',
-      fontWeight: '700',
-    },
-    secondaryButton: {
-      paddingVertical: 12,
-      paddingHorizontal: 16,
-      borderRadius: 8,
-      marginTop: isWide ? 0 : 8,
-    },
-    secondaryButtonText: {
-      color: theme.colors.text,
-      fontWeight: '600',
+      fontWeight: '800',
+      fontSize: 16,
     },
   });
 }

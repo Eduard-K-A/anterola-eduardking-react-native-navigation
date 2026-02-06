@@ -1,9 +1,25 @@
-import React from 'react';
-import { Modal, View, Text, Pressable, ScrollView, Dimensions } from 'react-native';
+
+import React, { useEffect, useRef, useCallback } from 'react';
+import {
+  Modal,
+  View,
+  Text,
+  Pressable,
+  ScrollView,
+  Dimensions,
+  Animated,
+  Easing,
+  PanResponder,
+  ActivityIndicator,
+  TouchableOpacity,
+} from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { Product } from '../constants/products';
 import CachedImage from './CachedImage';
+import Rating from './Rating';
+import PriceDisplay from './PriceDisplay';
+import StockBadge from './StockBadge';
 import createProductModalStyles from '../styles/productModalStyles';
 
 interface ProductModalProps {
@@ -13,68 +29,174 @@ interface ProductModalProps {
   onAdd?: (p: Product) => void;
 }
 
+const SCREEN = Dimensions.get('window');
+
 export const ProductModal: React.FC<ProductModalProps> = ({ visible, product, onClose, onAdd }) => {
-  if (!product) return null;
-
-  const { width } = Dimensions.get('window');
-  const isWide = width >= 768;
-
   const { theme } = useTheme();
-
+  const isWide = SCREEN.width >= 768;
   const styles = createProductModalStyles(theme, isWide);
 
+  const scrollY = useRef<number>(0);
+  const translateY = useRef(new Animated.Value(SCREEN.height)).current;
+  const backdropOpacity = useRef(new Animated.Value(0)).current;
+
+  // Pan responder for swipe-to-dismiss from handle only.
+  // NOTE: Attaching only to the handle ensures ScrollView and buttons remain interactive.
+  const pan = useRef(new Animated.Value(0)).current;
+  const panResponder = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_evt, gestureState) => {
+        const { dx, dy } = gestureState;
+        // Only capture vertical downward drags (dy > 0 and dominant over horizontal)
+        return Math.abs(dy) > Math.abs(dx) && dy > 6;
+      },
+      onPanResponderMove: (_evt, gesture) => {
+        if (gesture.dy > 0) {
+          pan.setValue(gesture.dy);
+        }
+      },
+      onPanResponderRelease: (_evt, gesture) => {
+        const shouldDismiss = gesture.vy > 1.2 || gesture.dy > SCREEN.height * 0.25;
+        if (shouldDismiss) {
+          Animated.parallel([
+            Animated.timing(backdropOpacity, { toValue: 0, duration: 180, useNativeDriver: true }),
+            Animated.timing(translateY, { toValue: SCREEN.height, duration: 260, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          ]).start(() => {
+            pan.setValue(0);
+            onClose();
+          });
+        } else {
+          Animated.spring(pan, { toValue: 0, useNativeDriver: true }).start();
+        }
+      },
+    }),
+  ).current;
+
+  const openAnim = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(backdropOpacity, { toValue: 1, duration: 220, useNativeDriver: true }),
+      Animated.spring(translateY, { toValue: 0, speed: 20, bounciness: 6, useNativeDriver: true }),
+    ]).start();
+  }, [backdropOpacity, translateY]);
+
+  const closeModal = useCallback(() => {
+    Animated.parallel([
+      Animated.timing(backdropOpacity, { toValue: 0, duration: 200, useNativeDriver: true }),
+      Animated.timing(translateY, { toValue: SCREEN.height, duration: 260, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+    ]).start(() => {
+      onClose();
+    });
+  }, [backdropOpacity, translateY, onClose]);
+
+  useEffect(() => {
+    if (visible) {
+      // reset
+      pan.setValue(0);
+      translateY.setValue(SCREEN.height);
+      backdropOpacity.setValue(0);
+      // small delay so modal mounts
+      requestAnimationFrame(() => openAnim());
+    }
+  }, [visible, openAnim, pan, translateY, backdropOpacity]);
+
+  if (!product) return null;
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable onPress={onClose} style={styles.overlay} accessibilityLabel="Close product details">
-        <Pressable onPress={() => {}} style={styles.container} accessibilityViewIsModal>
-          <View style={styles.contentRow}>
-            <View style={styles.imageWrapper}>
-              <CachedImage source={product.image} style={styles.image} />
-            </View>
-            <View style={styles.rightColumn}>
-              <View style={styles.headerRow}>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.title}>{product.name}</Text>
-                  {product.category && <Text style={styles.category}>{product.category}</Text>}
-                </View>
-                <Pressable onPress={onClose} style={styles.closeButton} accessibilityLabel="Close">
-                  <MaterialCommunityIcons name="close" size={22} color={theme.colors.text} />
-                </Pressable>
-              </View>
+    <Modal visible={visible} transparent onRequestClose={closeModal} animationType="none">
+      {/* Backdrop only participates in interactions when visible (Modal handles blocking) */}
+      <Animated.View 
+        style={[styles.backdrop, { opacity: backdropOpacity }]}
+        pointerEvents="box-none"
+      >
+        <Pressable 
+          style={styles.backdropPressArea} 
+          onPress={closeModal} 
+          accessibilityLabel="Close product details" 
+          pointerEvents="auto"
+        />
+      </Animated.View>
 
-              <Text style={styles.price}>${product.price.toFixed(2)}</Text>
+      {/* Sheet container: do NOT attach pan responder here, only to the handle */}
+      <Animated.View
+        style={[
+          styles.sheetContainer,
+          { transform: [{ translateY: Animated.add(translateY, pan) }] },
+        ]}
+        accessibilityViewIsModal
+        accessibilityLiveRegion="polite"
+      >
+      
 
-              <View style={styles.details}>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Brand:</Text>
-                  <Text style={styles.detailValue}>{product.brand}</Text>
-                </View>
+        <View style={styles.headerRow}>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.title} numberOfLines={2} ellipsizeMode="tail">
+              {product.name}
+            </Text>
+            <Text style={styles.brand}>{product.brand}</Text>
+          </View>
 
-                <View style={styles.detailRow}>
-                  <MaterialCommunityIcons name="star" size={16} color={theme.colors.primary} />
-                  <Text style={styles.starText}>{product.rating.toFixed(1)}</Text>
-                  <Text style={styles.reviewCount}>(4.2k reviews)</Text>
-                </View>
+          <TouchableOpacity onPress={closeModal} accessibilityLabel="Close" accessibilityRole="button" style={styles.closeButton}>
+            <MaterialCommunityIcons name="close" size={22} color={theme.colors.text} />
+          </TouchableOpacity>
+        </View>
 
-                <Text style={styles.stockText}>Stock: {product.stock}</Text>
-              </View>
+        <ScrollView
+          style={styles.contentScroll}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+          bounces
+          overScrollMode="never"
+          onScroll={({ nativeEvent }) => {
+            scrollY.current = nativeEvent.contentOffset.y;
+          }}
+          onScrollEndDrag={({ nativeEvent }) => {
+            // Allow fast swipe-down from top of content to dismiss
+            const velocityY = (nativeEvent as any).velocity?.y ?? 0;
+            if (scrollY.current <= 0 && velocityY > 1.2) {
+              closeModal();
+            }
+          }}
+          scrollEventThrottle={16}
+        >
+          <View style={styles.imageContainer}>
+            <CachedImage source={product.image} style={styles.heroImage} />
+          </View>
 
-              <ScrollView style={styles.descriptionScroll}>
-                <Text style={styles.descriptionText}>{product.description}</Text>
-              </ScrollView>
+          <View style={styles.infoSection}>
+            <Rating rating={product.rating} reviewCount={(product as any).reviewCount ?? 0} />
+            <PriceDisplay price={product.price} originalPrice={(product as any).originalPrice} discount={(product as any).discount} />
+            <StockBadge stock={product.stock} />
 
-              <View style={styles.actions}>
-                <Pressable onPress={() => onAdd?.(product)} style={({ pressed }) => ({ ...styles.primaryButton, opacity: pressed ? 0.85 : 1 })}>
-                  <Text style={styles.primaryButtonText}>Add to Cart</Text>
-                </Pressable>
-                <Pressable onPress={onClose} style={({ pressed }) => ({ ...styles.secondaryButton, opacity: pressed ? 0.85 : 1 })}>
-                  <Text style={styles.secondaryButtonText}>Close</Text>
-                </Pressable>
-              </View>
+            {product.category && <View style={styles.chipsRow}><Text style={styles.chip}>{product.category}</Text></View>}
+
+            <View style={styles.descriptionBlock}>
+              {product.description ? (
+                <Text style={styles.descriptionText} accessibilityLabel="Product description">
+                  {product.description}
+                </Text>
+              ) : (
+                <Text style={[styles.descriptionText, { color: theme.colors.textSecondary }]}>No description available.</Text>
+              )}
             </View>
           </View>
-        </Pressable>
-      </Pressable>
+        </ScrollView>
+
+        <View style={styles.actionsRow}>
+          <Pressable
+            onPress={() => onAdd?.(product)}
+            style={({ pressed }) => [
+              styles.primaryButton,
+              { opacity: pressed ? 0.85 : 1, backgroundColor: product.stock > 0 ? theme.colors.primary : theme.colors.muted },
+            ]}
+            accessibilityRole="button"
+            accessibilityLabel={product.stock > 0 ? 'Add to cart' : 'Out of stock'}
+            disabled={product.stock <= 0}
+          >
+            <Text style={styles.primaryButtonText}>{product.stock > 0 ? 'Add to Cart' : 'Out of Stock'}</Text>
+          </Pressable>
+        </View>
+      </Animated.View>
     </Modal>
   );
 };
