@@ -15,13 +15,13 @@ export interface Product {
 export const PRODUCTS: Product[] = [
   {
     id: 'wireless-headphones',
-    name: 'Wireless Headphones',
+    name: 'Xbox Controller',
     price: 129.99,
     image: require('../../assets/wireless_headphones.jpeg'),
-    description: 'Premium wireless headphones with noise cancellation',
+    description: 'Premium Xbox controller with wireless connectivity and ergonomic design',
     category: 'Electronics',
     stock: 15,
-    brand: 'SoundWave',
+    brand: 'GameTech',
     rating: 4.5,
   },
   {
