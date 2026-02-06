@@ -51,6 +51,10 @@ export const RootNavigator: React.FC = () => {
               {props.children}
             </Text>
           ),
+          // Ensure the card/content background matches the app background during transitions
+          contentStyle: { backgroundColor: theme.colors.background },
+          headerStyle: { backgroundColor: theme.colors.card },
+          headerTintColor: theme.colors.text,
         }}
       >
         <Stack.Screen
