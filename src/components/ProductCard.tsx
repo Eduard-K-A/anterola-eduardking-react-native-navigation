@@ -5,35 +5,31 @@ import { useCart } from '../contexts/CartContext';
 import { Product } from '../constants/products';
 import { formatPrice } from '../utils/format';
 import { productCardStyles } from '../styles/productCardStyles';
-import ProductModal from './ProductModal';
 
 interface ProductCardProps {
   product: Product;
+  onPress?: (p: Product) => void;
 }
 
-export const ProductCard = memo(({ product }: ProductCardProps) => {
+export const ProductCard = memo(({ product, onPress }: ProductCardProps) => {
   const { theme } = useTheme();
   const styles = productCardStyles(theme.colors);
   const { addToCart } = useCart();
-  const [modalVisible, setModalVisible] = React.useState(false);
 
   const handleAddToCart = () => {
     addToCart(product);
   };
 
-  const handleModalAdd = (p: Product) => {
-    addToCart(p);
-    setModalVisible(false);
-  };
+  
 
   return (
     <>
       <View style={styles.container}>
-        <Pressable onPress={() => setModalVisible(true)}>
+        <Pressable onPress={() => onPress?.(product)}>
           <Image source={product.image} style={styles.image} />
         </Pressable>
         <View style={styles.content}>
-          <Pressable onPress={() => setModalVisible(true)}>
+          <Pressable onPress={() => onPress?.(product)}>
             <Text style={styles.nameText} numberOfLines={2}>
               {product.name}
             </Text>
@@ -64,13 +60,7 @@ export const ProductCard = memo(({ product }: ProductCardProps) => {
           </View>
         </View>
       </View>
-      <ProductModal
-        visible={modalVisible}
-        product={product}
-        theme={theme}
-        onClose={() => setModalVisible(false)}
-        onAdd={handleModalAdd}
-      />
+      {/* Modal is lifted to parent for better performance and single-instance handling */}
     </>
   );
 });
