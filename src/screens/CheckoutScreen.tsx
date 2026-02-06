@@ -4,7 +4,6 @@ import { useFocusEffect } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
 import { useCart } from '../contexts/CartContext';
-import { ThemedView } from '../components/ThemedView';
 import { ThemedText } from '../components/ThemedText';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { CustomAlert } from '../components/CustomAlert';
