@@ -1,96 +1,74 @@
 import React from 'react';
 import { Modal, View, Text, Pressable, ScrollView, Dimensions } from 'react-native';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { AppTheme } from '../constants/theme';
+import { useTheme } from '../contexts/ThemeContext';
 import { Product } from '../constants/products';
 import CachedImage from './CachedImage';
+import createProductModalStyles from '../styles/productModalStyles';
 
 interface ProductModalProps {
   visible: boolean;
   product: Product | null;
-  theme: AppTheme;
   onClose: () => void;
   onAdd?: (p: Product) => void;
 }
 
-export const ProductModal: React.FC<ProductModalProps> = ({ visible, product, theme, onClose, onAdd }) => {
+export const ProductModal: React.FC<ProductModalProps> = ({ visible, product, onClose, onAdd }) => {
   if (!product) return null;
 
   const { width } = Dimensions.get('window');
   const isWide = width >= 768;
 
+  const { theme } = useTheme();
+
+  const styles = createProductModalStyles(theme, isWide);
+
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <Pressable
-        onPress={onClose}
-        style={{ flex: 1, backgroundColor: theme.colors.overlay, justifyContent: 'center', padding: 16 }}
-        accessibilityLabel="Close product details"
-      >
-        <Pressable
-          onPress={() => {}}
-          style={{
-            backgroundColor: theme.colors.card,
-            borderRadius: 12,
-            padding: 16,
-            maxHeight: '90%',
-            overflow: 'hidden',
-            borderWidth: 1,
-            borderColor: theme.colors.border,
-          }}
-          accessibilityViewIsModal
-        >
-          <View style={{ flexDirection: isWide ? 'row' : 'column' }}>
-            <View style={{ flex: isWide ? 0.4 : 0, marginRight: isWide ? 12 : 0, height: isWide ? 240 : 300 }}>
-              <CachedImage source={product.image} style={{ width: '100%', height: '100%', borderRadius: 8 }} />
+      <Pressable onPress={onClose} style={styles.overlay} accessibilityLabel="Close product details">
+        <Pressable onPress={() => {}} style={styles.container} accessibilityViewIsModal>
+          <View style={styles.contentRow}>
+            <View style={styles.imageWrapper}>
+              <CachedImage source={product.image} style={styles.image} />
             </View>
-            <View style={{ flex: 1 }}>
-              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <View style={styles.rightColumn}>
+              <View style={styles.headerRow}>
                 <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 22, fontWeight: '700', color: theme.colors.text }}>{product.name}</Text>
-                  {product.category && (
-                    <Text style={{ fontSize: 14, color: theme.colors.textSecondary, marginTop: 4 }}>{product.category}</Text>
-                  )}
+                  <Text style={styles.title}>{product.name}</Text>
+                  {product.category && <Text style={styles.category}>{product.category}</Text>}
                 </View>
-                <Pressable onPress={onClose} style={{ padding: 8 }} accessibilityLabel="Close">
+                <Pressable onPress={onClose} style={styles.closeButton} accessibilityLabel="Close">
                   <MaterialCommunityIcons name="close" size={22} color={theme.colors.text} />
                 </Pressable>
               </View>
 
-              <Text style={{ fontSize: 20, fontWeight: '800', color: theme.colors.primary, marginTop: 12 }}>${product.price.toFixed(2)}</Text>
+              <Text style={styles.price}>${product.price.toFixed(2)}</Text>
 
-              <View style={{ marginTop: 12 }}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                  <Text style={{ color: theme.colors.textSecondary, marginRight: 4 }}>Brand:</Text>
-                  <Text style={{ color: theme.colors.text, fontWeight: '600' }}>{product.brand}</Text>
+              <View style={styles.details}>
+                <View style={styles.detailRow}>
+                  <Text style={styles.detailLabel}>Brand:</Text>
+                  <Text style={styles.detailValue}>{product.brand}</Text>
                 </View>
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+
+                <View style={styles.detailRow}>
                   <MaterialCommunityIcons name="star" size={16} color={theme.colors.primary} />
-                  <Text style={{ color: theme.colors.text, fontWeight: '600', marginLeft: 4 }}>{product.rating.toFixed(1)}</Text>
-                  <Text style={{ color: theme.colors.textSecondary, marginLeft: 4 }}>(4.2k reviews)</Text>
+                  <Text style={styles.starText}>{product.rating.toFixed(1)}</Text>
+                  <Text style={styles.reviewCount}>(4.2k reviews)</Text>
                 </View>
-                <Text style={{ color: theme.colors.textSecondary }}>Stock: {product.stock}</Text>
+
+                <Text style={styles.stockText}>Stock: {product.stock}</Text>
               </View>
 
-              <ScrollView style={{ marginTop: 12, maxHeight: 160 }}>
-                <Text style={{ color: theme.colors.text, lineHeight: 20 }}>{product.description}</Text>
+              <ScrollView style={styles.descriptionScroll}>
+                <Text style={styles.descriptionText}>{product.description}</Text>
               </ScrollView>
 
-              <View style={{ flexDirection: isWide ? 'row' : 'column', marginTop: 16, gap: 8 }}>
-                <Pressable
-                  onPress={() => onAdd?.(product)}
-                  style={({ pressed }) => ({
-                    backgroundColor: theme.colors.primary,
-                    paddingVertical: 12,
-                    paddingHorizontal: 16,
-                    borderRadius: 8,
-                    opacity: pressed ? 0.85 : 1,
-                    marginRight: isWide ? 8 : 0,
-                  })}
-                >
-                  <Text style={{ color: '#fff', fontWeight: '700' }}>Add to Cart</Text>
+              <View style={styles.actions}>
+                <Pressable onPress={() => onAdd?.(product)} style={({ pressed }) => ({ ...styles.primaryButton, opacity: pressed ? 0.85 : 1 })}>
+                  <Text style={styles.primaryButtonText}>Add to Cart</Text>
                 </Pressable>
-                <Pressable onPress={onClose} style={({ pressed }) => ({ paddingVertical: 12, paddingHorizontal: 16, borderRadius: 8, opacity: pressed ? 0.85 : 1 })}>
-                  <Text style={{ color: theme.colors.text, fontWeight: '600' }}>Close</Text>
+                <Pressable onPress={onClose} style={({ pressed }) => ({ ...styles.secondaryButton, opacity: pressed ? 0.85 : 1 })}>
+                  <Text style={styles.secondaryButtonText}>Close</Text>
                 </Pressable>
               </View>
             </View>
